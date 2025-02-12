@@ -67,6 +67,7 @@ rules(erl_files) ->
                              no_author,
                              no_behavior_info,
                              no_block_expressions,
+                             no_boolean_in_comparison,
                              no_catch_expressions,
                              no_debug_call,
                              no_dollar_space,
