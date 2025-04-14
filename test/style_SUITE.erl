@@ -28,7 +28,7 @@
          verify_no_match_in_condition/1, verify_param_pattern_matching/1,
          verify_private_data_types/1, verify_unquoted_atoms/1, verify_no_init_lists/1,
          verify_ms_transform_included/1, verify_redundant_blank_lines/1,
-         verify_no_boolean_in_comparison/1]).
+         verify_no_boolean_in_comparison/1, no_todo_in_comments/1, change_todo_in_comments/1]).
 %% -elvis attribute
 -export([verify_elvis_attr_atom_naming_convention/1, verify_elvis_attr_numeric_format/1,
          verify_elvis_attr_dont_repeat_yourself/1, verify_elvis_attr_function_naming_convention/1,
@@ -339,6 +339,24 @@ verify_no_trailing_whitespace_rule(Config) ->
     do_verify_no_trailing_whitespace(Path, Config, #{ignore_empty_lines => true}, 3),
     do_verify_no_trailing_whitespace(Path, Config, #{ignore_empty_lines => false}, 4),
     do_verify_no_trailing_whitespace(Path, Config, #{}, 4).
+
+-spec no_todo_in_comments(config()) -> any().
+no_todo_in_comments(Config) ->
+    Ext = proplists:get_value(test_file_ext, Config, "erl"),
+
+    Path = "fail_no_todo_in_comments." ++ Ext,
+
+    [_] =
+        elvis_core_apply_rule(Config, elvis_text_style, no_todo_in_comments(Config), #{}, Path).
+
+-spec change_todo_in_comments(config()) -> any().
+change_todo_in_comments(Config) ->
+    Ext = proplists:get_value(test_file_ext, Config, "erl"),
+
+    Path = "fail_change_todo_in_comments." ++ Ext,
+
+    [_] =
+        elvis_core_apply_rule(Config, elvis_text_style, no_todo_in_comments(Config), #{}, Path).
 
 -spec verify_no_trailing_whitespace_rule_lf_crlf(config()) -> any().
 verify_no_trailing_whitespace_rule_lf_crlf(Config) ->

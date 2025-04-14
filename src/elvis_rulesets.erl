@@ -48,7 +48,13 @@ rules(hrl_files) ->
                              variable_naming_convention]]);
 rules(erl_files) ->
     lists:map(fun({Mod, Rule}) -> {Mod, Rule, apply(Mod, default, [Rule])} end,
-              [{elvis_text_style, Rule} || Rule <- [line_length, no_tabs, no_trailing_whitespace]]
+              [{elvis_text_style, Rule}
+               || Rule
+                      <- [line_length,
+                          no_tabs,
+                          no_trailing_whitespace,
+                          no_todo_in_comments,
+                          change_to_in_comments]]
               ++ [{elvis_style, Rule}
                   || Rule
                          <- [atom_naming_convention,

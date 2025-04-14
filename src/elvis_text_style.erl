@@ -1,7 +1,8 @@
 -module(elvis_text_style).
 
 -export([default/1, line_length/3, no_tabs/3, no_trailing_whitespace/3,
-         prefer_unquoted_atoms/3, no_redundant_blank_lines/3]).
+         prefer_unquoted_atoms/3, no_redundant_blank_lines/3, no_todo_in_comments/3,
+         change_todo_in_comments/3]).
 
 -export_type([line_length_config/0, no_trailing_whitespace_config/0]).
 
@@ -14,6 +15,8 @@
 -define(NO_REDUNDANT_BLANK_LINES_MSG,
         "Too many blank lines at line ~p. ~p sequential blank lines found,"
         "when the maximum is set to ~p.").
+-define(NO_TODO_IN_COMMENTS, "no todos in comments").
+-define(CHANGE_TODO_IN_COMMENTS, "change todos in comments").
 
 % These are part of a non-declared "behaviour"
 % The reason why we don't try to handle them with different arity is
@@ -24,7 +27,10 @@
          {no_tabs, 3},
          {line_length, 3},
          {prefer_unquoted_atoms, 3},
-         {no_redundant_blank_lines, 3}]}]).
+         {no_redundant_blank_lines, 3},
+         {no_todo_in_comments, 3},
+         {change_todo_in_comments, 3},
+         {}]}]).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Default values
@@ -40,11 +46,39 @@ default(no_tabs) ->
 default(no_trailing_whitespace) ->
     #{ignore_empty_lines => false};
 default(no_redundant_blank_lines) ->
-    #{max_lines => 1}.
+    #{max_lines => 1};
+default(todo_in_comments) ->
+    #{mode => change}.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Rules
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+-spec no_todo_in_comments(elvis_config:config(),
+                          elvis_file:file(),
+                          line_length_config()) ->
+                             [elvis_result:item()].
+no_todo_in_comments(_Config, Target, _RuleConfig) ->
+    todo_in_comments(Target, ?NO_TODO_IN_COMMENTS).
+
+-spec change_todo_in_comments(elvis_config:config(),
+                              elvis_file:file(),
+                              line_length_config()) ->
+                                 [elvis_result:item()].
+change_todo_in_comments(_Config, Target, _RuleConfig) ->
+    todo_in_comments(Target, ?CHANGE_TODO_IN_COMMENTS).
+
+todo_in_comments(Target, ResultMessage) ->
+    {Src, _} = elvis_file:src(Target),
+    _Lines = elvis_utils:split_all_lines(Src, [trim]),
+    _TodoLines = fun(Line) -> binary:match(Line, <<"TODO">>) end,
+    _ResultFun =
+        fun(Line) ->
+           Info = [Line],
+           elvis_result:new(item, ResultMessage, Info, Line)
+        end,
+    % lists:map(ResultFun, TodoLines).
+    [].
 
 -type line_length_config() ::
     #{ignore => [elvis_style:ignorable()],
