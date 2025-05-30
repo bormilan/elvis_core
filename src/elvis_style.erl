@@ -55,7 +55,8 @@
     no_init_lists/3,
     ms_transform_included/3,
     no_boolean_in_comparison/3,
-    no_operation_on_same_value/3
+    no_operation_on_same_value/3,
+    parentheses_in_macro_defs/3
 ]).
 
 -export_type([empty_rule_config/0]).
@@ -280,6 +281,10 @@
     "Operation ~p on line ~p is has the same value on both sides."
     " Since the result is known, it is redundant."
 ).
+-define(PARENTHESES_IN_MACRO_DEFS,
+    "Invalid parenthesis at a macro in line ~p"
+    "Functions should contain parenthesis, constants shouldn't"
+).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Default values
@@ -492,7 +497,8 @@ default(RuleWithEmptyDefault) when
     RuleWithEmptyDefault == export_used_types;
     RuleWithEmptyDefault == consistent_variable_casing;
     RuleWithEmptyDefault == ms_transform_included;
-    RuleWithEmptyDefault == no_boolean_in_comparison
+    RuleWithEmptyDefault == no_boolean_in_comparison;
+    RuleWithEmptyDefault == parentheses_in_macro_defs
 ->
     #{}.
 
@@ -2205,6 +2211,53 @@ public_data_types(TypesToCheck, TreeRootNode, ExportedTypes) ->
          || Node <- elvis_code:find(Fun, TreeRootNode, #{traverse => all, mode => node})
         ],
     lists:filter(fun({Name, Arity}) -> lists:member({Name, Arity}, ExportedTypes) end, Types).
+
+-spec parentheses_in_macro_defs(
+    elvis_config:config(),
+    elvis_file:file(),
+    empty_rule_config()
+) ->
+    [elvis_result:item()].
+parentheses_in_macro_defs(Config, Target, RuleConfig) ->
+    Root = get_root(Config, Target, RuleConfig),
+    MacroNodes =
+        elvis_code:find(fun is_macro_define_node/1, Root),
+
+    IsCall = fun
+        ({tree, _, _, String}) ->
+            % TODO: use regex, or fix in ktn_code
+            lists:member($(, String);
+        ({call, _, _, _}) ->
+            true;
+        (_) ->
+            false
+    end,
+
+    InvalidMacroNodes =
+        lists:filtermap(
+            fun(MacroNode) ->
+                [Left, Right] = ktn_code:attr(value, MacroNode),
+                case {IsCall(Left), IsCall(Right)} of
+                    {true, true} ->
+                        false;
+                    {false, false} ->
+                        false;
+                    {true, false} ->
+                        {true, MacroNode};
+                    {false, true} ->
+                        {true, MacroNode}
+                end
+            end,
+            MacroNodes
+        ),
+
+    lists:map(
+        fun(Node) ->
+            {Line, _} = ktn_code:attr(location, Node),
+            elvis_result:new(item, ?PARENTHESES_IN_MACRO_DEFS, [Line], Line)
+        end,
+        InvalidMacroNodes
+    ).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Private

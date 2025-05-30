@@ -72,7 +72,8 @@
     verify_ms_transform_included/1,
     verify_redundant_blank_lines/1,
     verify_no_boolean_in_comparison/1,
-    verify_no_operation_on_same_value/1
+    verify_no_operation_on_same_value/1,
+    verify_parentheses_in_macro_defs/1
 ]).
 %% -elvis attribute
 -export([
@@ -2522,19 +2523,33 @@ oddities(_Config) ->
 verify_redundant_blank_lines(Config) ->
     Ext = proplists:get_value(test_file_ext, Config, "erl"),
 
-    % pass
     PassModule = pass_redundant_blank_lines,
     PassPath = atom_to_list(PassModule) ++ "." ++ Ext,
 
     [] =
         elvis_core_apply_rule(Config, elvis_text_style, no_redundant_blank_lines, #{}, PassPath),
 
-    % fail
     FailModule = fail_redundant_blank_lines,
     FailPath = atom_to_list(FailModule) ++ "." ++ Ext,
 
     [_, _, _] =
         elvis_core_apply_rule(Config, elvis_text_style, no_redundant_blank_lines, #{}, FailPath).
+
+-spec verify_parentheses_in_macro_defs(config()) -> true.
+verify_parentheses_in_macro_defs(Config) ->
+    Ext = proplists:get_value(test_file_ext, Config, "erl"),
+
+    PassModule = pass_parentheses_in_macro_defs,
+    PassPath = atom_to_list(PassModule) ++ "." ++ Ext,
+
+    [] =
+        elvis_core_apply_rule(Config, elvis_style, parentheses_in_macro_defs, #{}, PassPath),
+
+    FailModule = fail_parentheses_in_macro_defs,
+    FailPath = atom_to_list(FailModule) ++ "." ++ Ext,
+
+    [_, _, _] =
+        elvis_core_apply_rule(Config, elvis_style, parentheses_in_macro_defs, #{}, FailPath).
 
 -spec verify_elvis_attr_atom_naming_convention(config()) -> true.
 verify_elvis_attr_atom_naming_convention(Config) ->

@@ -127,7 +127,8 @@ rules(erl_files_strict) ->
                         no_init_lists,
                         no_common_caveats_call,
                         no_macros,
-                        state_record_and_type
+                        state_record_and_type,
+                        parentheses_in_macro_defs
                     ]
             ]
         );
