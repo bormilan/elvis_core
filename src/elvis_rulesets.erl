@@ -55,7 +55,8 @@ rules(hrl_files) ->
                         numeric_format,
                         operator_spaces,
                         used_ignored_variable,
-                        variable_naming_convention
+                        variable_naming_convention,
+                        parentheses_in_macro_defs
                     ]
             ]
     );
@@ -105,7 +106,8 @@ rules(erl_files) ->
                         param_pattern_matching,
                         private_data_types,
                         used_ignored_variable,
-                        variable_naming_convention
+                        variable_naming_convention,
+                        parentheses_in_macro_defs
                     ]
             ]
     );

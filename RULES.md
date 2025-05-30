@@ -77,6 +77,7 @@ Most, if not all, of the rules will present (opinionated) documentation sections
 - [State Record And Type](doc_rules/elvis_style/state_record_and_type.md)
 - [Used Ignored Variable](doc_rules/elvis_style/used_ignored_variable.md)
 - [Variable Naming Convention](doc_rules/elvis_style/variable_naming_convention.md)
+- [Parentheses in Macro Definitions](doc_rules/elvis_style/parentheses_in_macro_definitions.md)
 
 ## `.gitignore` rules
 
