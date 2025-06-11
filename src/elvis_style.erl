@@ -2225,38 +2225,43 @@ parentheses_in_macro_defs(Config, Target, RuleConfig) ->
 
     IsCall = fun
         ({tree, _, _, String}) ->
-            % TODO: use regex, or fix in ktn_code
-            lists:member($(, String);
+            io:format(user, "~n----------------------------------~n", []),
+            io:format(user, "~p~n", [String]),
+            io:format(user, "------------------------------------~n", []),
+            % lists:member($(, String);
+            case re:run(String, "^[a-z0-9_]+\( [A-Za-z0-9_]+ \)$") of
+                {match, _} ->
+                    true;
+                nomatch ->
+                    false
+            end;
         ({call, _, _, _}) ->
             true;
         (_) ->
             false
     end,
 
-    InvalidMacroNodes =
-        lists:filtermap(
-            fun(MacroNode) ->
-                [Left, Right] = ktn_code:attr(value, MacroNode),
-                case {IsCall(Left), IsCall(Right)} of
-                    {true, true} ->
-                        false;
-                    {false, false} ->
-                        false;
-                    {true, false} ->
-                        {true, MacroNode};
-                    {false, true} ->
-                        {true, MacroNode}
-                end
-            end,
-            MacroNodes
-        ),
-
-    lists:map(
+    ResultFun =
         fun(Node) ->
             {Line, _} = ktn_code:attr(location, Node),
             elvis_result:new(item, ?PARENTHESES_IN_MACRO_DEFS, [Line], Line)
         end,
-        InvalidMacroNodes
+
+    lists:filtermap(
+        fun(MacroNode) ->
+            [Left, Right] = ktn_code:attr(value, MacroNode),
+            case {IsCall(Left), IsCall(Right)} of
+                {true, true} ->
+                    false;
+                {false, false} ->
+                    false;
+                {true, false} ->
+                    {true, ResultFun(MacroNode)};
+                {false, true} ->
+                    {true, ResultFun(MacroNode)}
+            end
+        end,
+        MacroNodes
     ).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
