@@ -1170,7 +1170,7 @@ behaviour_callbacks_from_node(BehaviourNode) ->
     maybe
         {module, Behaviour} ?= code:ensure_loaded(Behaviour),
         true ?= erlang:function_exported(Behaviour, behaviour_info, 1),
-        Callbacks = catch Behaviour:behaviour_info(callbacks),
+        Callbacks = catch apply(Behaviour, behaviour_info, [callbacks]),
         true ?= is_list(Callbacks),
         Callbacks
     else
