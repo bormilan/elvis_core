@@ -1130,10 +1130,17 @@ is_opaque_state(TypeAttrOrOpaqueNode) ->
 
 -spec consistent_ok_error_spec(elvis_rule:t(), elvis_config:t()) -> [elvis_result:item()].
 consistent_ok_error_spec(Rule, ElvisConfig) ->
+    Root = elvis_code:root(Rule, ElvisConfig),
+    BehaviourCallbacks = behaviour_callbacks(Root),
+
     {nodes, SpecsWithJustOkResult} = elvis_code:find(#{
         of_types => [spec],
-        inside => elvis_code:root(Rule, ElvisConfig),
-        filtered_by => fun spec_has_just_ok_result/1
+        inside => Root,
+        filtered_by =>
+            fun(SpecNode) ->
+                spec_has_just_ok_result(SpecNode) andalso
+                    not is_behaviour_callback_spec(SpecNode, BehaviourCallbacks)
+            end
     }),
 
     [
@@ -1145,6 +1152,34 @@ consistent_ok_error_spec(Rule, ElvisConfig) ->
         )
      || SpecWithJustOkResult <- SpecsWithJustOkResult
     ].
+
+behaviour_callbacks(Root) ->
+    {nodes, BehaviourNodes} = elvis_code:find(#{
+        of_types => [behaviour, behavior],
+        inside => Root
+    }),
+    sets:from_list(
+        lists:flatmap(fun behaviour_callbacks_from_node/1, BehaviourNodes),
+        [{version, 2}]
+    ).
+
+behaviour_callbacks_from_node(BehaviourNode) ->
+    Behaviour = ktn_code:attr(value, BehaviourNode),
+    maybe
+        {module, Behaviour} ?= code:ensure_loaded(Behaviour),
+        true ?= erlang:function_exported(Behaviour, behaviour_info, 1),
+        Callbacks = catch Behaviour:behaviour_info(callbacks),
+        true ?= is_list(Callbacks),
+        Callbacks
+    else
+        _ -> []
+    end.
+
+is_behaviour_callback_spec(SpecNode, BehaviourCallbacks) ->
+    sets:is_element(
+        {ktn_code:attr(name, SpecNode), ktn_code:attr(arity, SpecNode)},
+        BehaviourCallbacks
+    ).
 
 spec_has_just_ok_result(SpecNode) ->
     lists:all(
