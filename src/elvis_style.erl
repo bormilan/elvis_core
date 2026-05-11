@@ -1194,15 +1194,8 @@ known_behaviours() ->
     ].
 
 callbacks_of_behaviour(Behaviour) ->
-    maybe
-        {module, Behaviour} ?= code:ensure_loaded(Behaviour),
-        true ?= erlang:function_exported(Behaviour, behaviour_info, 1),
-        Callbacks = apply(Behaviour, behaviour_info, [callbacks]),
-        true ?= is_list(Callbacks),
-        Callbacks
-    else
-        _ -> []
-    end.
+    {module, Behaviour} ?= code:ensure_loaded(Behaviour),
+    erlang:apply(Behaviour, behaviour_info, [callbacks]).
 
 is_behaviour_callback_spec(SpecNode, BehaviourCallbacks) ->
     sets:is_element(
