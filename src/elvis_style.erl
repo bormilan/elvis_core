@@ -1194,7 +1194,7 @@ known_behaviours() ->
     ].
 
 callbacks_of_behaviour(Behaviour) ->
-    {module, Behaviour} ?= code:ensure_loaded(Behaviour),
+    {module, Behaviour} = code:ensure_loaded(Behaviour),
     erlang:apply(Behaviour, behaviour_info, [callbacks]).
 
 is_behaviour_callback_spec(SpecNode, BehaviourCallbacks) ->
