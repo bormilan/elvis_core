@@ -86,6 +86,22 @@
 % The whole file is considered to have either callback functions or rules.
 -ignore_xref(elvis_style).
 
+-define(KNOWN_BEHAVIOURS, [
+    application,
+    gen_event,
+    gen_server,
+    ssh_channel,
+    ssh_client_channel,
+    ssh_client_key_api,
+    ssh_server_channel,
+    ssh_server_key_api,
+    ssl_crl_cache_api,
+    ssl_session_cache_api,
+    supervisor,
+    supervisor_bridge,
+    tftp
+]).
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Default values
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1133,40 +1149,50 @@ is_opaque_state(TypeAttrOrOpaqueNode) ->
 -spec consistent_ok_error_spec(elvis_rule:t(), elvis_config:t()) -> [elvis_result:item()].
 consistent_ok_error_spec(Rule, ElvisConfig) ->
     Root = elvis_code:root(Rule, ElvisConfig),
-    BehaviourCallbacks = behaviour_callbacks(Root),
+    case behaviour_callbacks(Root) of
+        disabled ->
+            [];
+        BehaviourCallbacks ->
+            {nodes, SpecsWithJustOkResult} = elvis_code:find(#{
+                of_types => [spec],
+                inside => Root,
+                filtered_by =>
+                    fun(SpecNode) ->
+                        spec_has_just_ok_result(SpecNode) andalso
+                            not is_behaviour_callback_spec(SpecNode, BehaviourCallbacks)
+                    end
+            }),
 
-    {nodes, SpecsWithJustOkResult} = elvis_code:find(#{
-        of_types => [spec],
-        inside => Root,
-        filtered_by =>
-            fun(SpecNode) ->
-                spec_has_just_ok_result(SpecNode) andalso
-                    not is_behaviour_callback_spec(SpecNode, BehaviourCallbacks)
-            end
-    }),
-
-    [
-        elvis_result:new_item(
-            "function ~p unnecessarily wraps its results in a tuple; prefer not "
-            "wrapping them or adding alternative/error results to the spec",
-            [ktn_code:attr(name, SpecWithJustOkResult)],
-            #{node => SpecWithJustOkResult}
-        )
-     || SpecWithJustOkResult <- SpecsWithJustOkResult
-    ].
+            [
+                elvis_result:new_item(
+                    "function ~p unnecessarily wraps its results in a tuple; prefer not "
+                    "wrapping them or adding alternative/error results to the spec",
+                    [ktn_code:attr(name, SpecWithJustOkResult)],
+                    #{node => SpecWithJustOkResult}
+                )
+             || SpecWithJustOkResult <- SpecsWithJustOkResult
+            ]
+    end.
 
 behaviour_callbacks(Root) ->
     {nodes, BehaviourNodes} = elvis_code:find(#{
         of_types => [behaviour, behavior],
         inside => Root
     }),
-    sets:from_list(
-        lists:flatmap(fun behaviour_callbacks_from_node/1, BehaviourNodes),
-        [{version, 2}]
-    ).
+    Behaviours = lists:map(
+        fun(BehaviourNode) -> ktn_code:attr(value, BehaviourNode) end, BehaviourNodes
+    ),
+    case lists:all(fun(Behaviour) -> lists:member(Behaviour, ?KNOWN_BEHAVIOURS) end, Behaviours) of
+        true ->
+            sets:from_list(
+                lists:flatmap(fun callbacks_of_behaviour/1, Behaviours),
+                [{version, 2}]
+            );
+        false ->
+            disabled
+    end.
 
-behaviour_callbacks_from_node(BehaviourNode) ->
-    Behaviour = ktn_code:attr(value, BehaviourNode),
+callbacks_of_behaviour(Behaviour) ->
     maybe
         {module, Behaviour} ?= code:ensure_loaded(Behaviour),
         true ?= erlang:function_exported(Behaviour, behaviour_info, 1),
