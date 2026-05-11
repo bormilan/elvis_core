@@ -86,22 +86,6 @@
 % The whole file is considered to have either callback functions or rules.
 -ignore_xref(elvis_style).
 
--define(KNOWN_BEHAVIOURS, [
-    application,
-    gen_event,
-    gen_server,
-    ssh_channel,
-    ssh_client_channel,
-    ssh_client_key_api,
-    ssh_server_channel,
-    ssh_server_key_api,
-    ssl_crl_cache_api,
-    ssl_session_cache_api,
-    supervisor,
-    supervisor_bridge,
-    tftp
-]).
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Default values
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1182,7 +1166,7 @@ behaviour_callbacks(Root) ->
     Behaviours = lists:map(
         fun(BehaviourNode) -> ktn_code:attr(value, BehaviourNode) end, BehaviourNodes
     ),
-    case lists:all(fun(Behaviour) -> lists:member(Behaviour, ?KNOWN_BEHAVIOURS) end, Behaviours) of
+    case lists:all(fun(Behaviour) -> lists:member(Behaviour, known_behaviours()) end, Behaviours) of
         true ->
             sets:from_list(
                 lists:flatmap(fun callbacks_of_behaviour/1, Behaviours),
@@ -1191,6 +1175,23 @@ behaviour_callbacks(Root) ->
         false ->
             disabled
     end.
+
+known_behaviours() ->
+    [
+        application,
+        gen_event,
+        gen_server,
+        ssh_channel,
+        ssh_client_channel,
+        ssh_client_key_api,
+        ssh_server_channel,
+        ssh_server_key_api,
+        ssl_crl_cache_api,
+        ssl_session_cache_api,
+        supervisor,
+        supervisor_bridge,
+        tftp
+    ].
 
 callbacks_of_behaviour(Behaviour) ->
     maybe
